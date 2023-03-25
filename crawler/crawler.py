@@ -2,10 +2,10 @@ import requests
 import re
 import utils
 import json
-
+filename="province_name.json"
+file = open(filename, encoding="utf8")
 # province_name is used for translating province name from thai to eng
-province_name = json.load(open("province_name.json"))
-
+province_name = json.load(file)
 
 class HTMLParser:
     """The HTMLParser class is a class that can be used to extract information from HTML strings.
@@ -28,7 +28,7 @@ class HTMLParser:
         html : '<html><body><a href="<https://www.example.com>">Link</a></body></html>'
         returns : ['<a href="<https://www.example.com>">']
         """
-        return re.findall(r'<a\\s+[^>]*>', html)
+        return re.findall(r'<a\s+[^>]*>', html)
 
     def get_href(self, html: str):
         """
@@ -104,15 +104,34 @@ class Crawler:
         - `temples` : list - A list of dictionaries containing the title and href of the anchor tags in the HTML.
 
         """
+
         anchors = self.parser.get_anchor(html)
+        # print("--ANCHORS--")
+        # print(anchors)
+        f = open("anchors.txt", "w", encoding="utf-8")
+        f.write("Found "+str(len(anchors))+" <a>\n")
+        for item in anchors:
+            f.write(str(item)+"\n")
+        f.close()
+        # print("--End ANCHORS--")
         temples = []
+        # print("--title--")
         for anchor in anchors:
             title = self.parser.get_title(anchor)
             href = self.parser.get_href(anchor)
-
             if len(title) != 0:
                 if re.match("รายชื่อวัดใน", title[0]):
                     temples.append({"title": title[0], "href": href[0]})
+                    f = open("href.txt", "a", encoding="utf-8")
+                    # for item in href:
+                    f.write(str(href[0])+"\n")
+                    f.close()   
+                    f = open("title.txt", "a", encoding="utf-8")
+                    # for item in href:
+                    f.write(str(title[0])+"\n")
+                    f.close()
+
+            # print("--End title--")
         return temples
 
     def extract_temple_name(self, html):
@@ -143,14 +162,18 @@ class Crawler:
 
         - `None`
         """        
+        print("Start running crawler")
         # Clear the list of previously collected data
         self.result = []
 
         # Get the HTML of the root page
         root_html = requests.get(self.root_url).text
-
+        # print(root_html)
         # Extract the provinces and their corresponding URLs from the HTML of the root page
         provinces_href = self.extract_provinces(root_html)
+        # print("--provinces_href--")
+        # print(provinces_href)
+
         province_url_to_visit = []
 
         # Get links for each desired province
@@ -160,6 +183,7 @@ class Crawler:
                 if match:
                     province_url_to_visit.append(
                         {'province': province, 'url': self.HOST+ph['href']})
+        print("province_url_to_visit :",province_url_to_visit)
 
         # Crawl each province and extract the names of the temples in each province
         for province_url in province_url_to_visit:
@@ -167,9 +191,9 @@ class Crawler:
             print('Crawling: ' + province_url['province'])
             html = requests.get(url).text
             temple_name_in_this_province = self.extract_temple_name(html)
-
+            
             # Export the collected data to a CSV file
             thai_province_name = province_url['province']
             eng_province_name = province_name['to_eng'][thai_province_name]
             utils.export_csv(temple_name_in_this_province, header=None,
-                             filename='../' + eng_province_name+'.csv')
+                            filename='../' + eng_province_name+'.csv')

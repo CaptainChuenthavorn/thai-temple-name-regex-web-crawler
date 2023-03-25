@@ -14,18 +14,15 @@ if __name__ == "__main__":
 
     # no args
     province_thai = ["กาฬสินธุ์", "กำแพงเพชร", "ขอนแก่น", "จันทบุรี"]
-    print("system argument",sys.argv)
+
     # args
     if len(sys.argv) > 1:
         args = sys.argv[1:]
         if (args[0] == "-p" or args[0] == "-province") and len(args) > 1:
             province_thai = [province_name["to_thai"][province]
                             for province in args[1:]]
-    print("province_thai",province_thai)
+
     crawler = crawler.Crawler(HOST, URL, province_thai, crawler.HTMLParser())
 
     # crawler export the temple names to csv file
     crawler.run()
-
-
-
